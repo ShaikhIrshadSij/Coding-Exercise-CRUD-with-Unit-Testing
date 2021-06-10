@@ -1,0 +1,145 @@
+﻿
+
+<div id="users-index">
+    <button class="btn btn-success mb-2" v-on:click="addUser">Add User</button>
+    <table class="table table-bordered table-hover table-striped">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>City</th>
+                <th>Phone Number</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(user, index) of usersList" :key="index">
+                <td>{{ user.firstName }}</td>
+                <td>{{ user.lastName }}</td>
+                <td>{{ user.city }}</td>
+                <td>{{ user.phoneNumber }}</td>
+                <td>
+                    <button class="btn btn-success" v-on:click="editUser(user)">Edit</button>
+                    <button class="btn btn-danger" v-on:click="deleteUser(user)">Delete</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="modal fade" id="modalUser" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content" v-if="userDTO">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{ userDTO.id ? 'Edit User' : 'Add User' }}</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" class="form-control" v-model="userDTO.firstName" />
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" class="form-control" v-model="userDTO.lastName" />
+                    </div>
+                    <div class="form-group">
+                        <label>City</label>
+                        <select class="form-control" v-model="userDTO.city">
+                            <option value="">Select City</option>
+                            <option v-for="(option, index) of cityList" :key="index" v-bind:value="option">{{ option }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="number" class="form-control" v-model="userDTO.phoneNumber" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" v-on:click="manageUser">Save Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts{
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+
+    <script>
+        new Vue({
+            el: '#users-index',
+            data: function () {
+                return {
+                    usersList: [],
+                    userDTO: null,
+                    cityList: ["Bangalore", "Mysore", "Hyderabad", "Vijayawada", "Surat", "Ahmedabad", "Other"]
+                }
+            },
+            mounted: function () {
+                this.getUsersList();
+            },
+            methods: {
+                addUser: function () {
+                    this.userDTO = {
+                        id: 0,
+                        firstName: '',
+                        lastName: '',
+                        city: '',
+                        phoneNumber: '',
+                    }
+                    $('#modalUser').modal('show')
+                },
+                editUser: function (user) {
+                    this.userDTO = JSON.parse(JSON.stringify(user))
+                    $('#modalUser').modal('show')
+                },
+                getUsersList: function () {
+                    showLoader()
+                    var self = this;
+                    $.ajax({
+                        url: '/Users/GetUsersList',
+                        type: 'GET',
+                        success: function (res) {
+                            self.usersList = res
+                            hideLoader()
+                        },
+                        error: function (err) {
+                            hideLoader()
+                        }
+                    })
+                },
+                deleteUser: function (user) {
+                    if (confirm("Are you sure?")) {
+                        var self = this;
+                        $.ajax({
+                            url: '/Users/DeleteUser',
+                            data: {
+                                userId: user.id
+                            },
+                            type: 'DELETE',
+                            success: function (res) {
+                                self.getUsersList()
+                            }
+                        })
+                    }
+                },
+                manageUser: function () {
+                    var self = this;
+                    $.ajax({
+                        url: self.userDTO.id ? '/Users/UpdateUser' : '/Users/AddUser',
+                        data: {
+                            usersEntity: self.userDTO
+                        },
+                        type: 'POST',
+                        success: function (res) {
+                            $('#modalUser').modal('hide')
+                            self.getUsersList()
+                        }
+                    })
+                }
+            }
+        })
+    </script>
+}
